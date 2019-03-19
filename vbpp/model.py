@@ -51,7 +51,8 @@ class VBPP(gpflow.models.GPModel):
     constant offset `beta0` from John and Hensman (2018).
     """
 
-    def __init__(self, events: np.ndarray,
+    def __init__(self,
+                 events: np.ndarray,
                  feature: gpflow.features.InducingFeature,
                  kernel: gpflow.kernels.Kernel,
                  domain: np.ndarray,
@@ -67,23 +68,31 @@ class VBPP(gpflow.models.GPModel):
         M = size of inducing features (number of inducing points)
 
         :param events: observed data: the positions of observed events  (N x D)
+        :param feature: inducing features (here only implemented for a gpflow
+            .features.InducingPoints instance, with Z of shape M x D)
+        :param kernel: the kernel (here only implemented for a gpflow.kernels
+            .SquaredExponential instance)
+        :param domain: lower and upper bounds of (hyper-rectangular) domain
+            (D x 2)
 
-        :param feature: inducing features (features.InducingPoints or features.FourierFeature instance)
-        :param kernel: the kernel (`gpflow.kernels.Kernel` instance)
-        :param q_mu: initial mean vector of the variational distribution q(u)  (length M)
-        :param q_S: how to initialise the covariance matrix of the variational distribution q(u)  (M x M)
+        :param q_mu: initial mean vector of the variational distribution q(u)
+            (length M)
+        :param q_S: how to initialise the covariance matrix of the variational
+            distribution q(u)  (M x M)
 
-        :param domain: lower and upper bounds of (hyper-rectangular) domain (D x 2) or multi-window
-        integration region in the case of the filtered derived class.
+        :param beta0: a constant offset, corresponding to initial value of the
+            prior mean of the GP (but trainable); should be sufficiently large
+            so that the GP does not go negative...
 
-        :param beta0: initial value of prior mean of the GP; should be sufficiently large so that
-        the GP does not go negative...
-
-        :param num_observations: number of observations of sets of events under the distribution
+        :param num_observations: number of observations of sets of events
+            under the distribution
 
         :param minibatch_size: size of minibatches; if None use all data
+
+        :param name: name of the model (determines tensorflow variable prefixes)
         """
-        gpflow.models.Model.__init__(self, name=name)
+        gpflow.models.Model.__init__(self, name=name)  # we only want convenience functions from
+        # the GPModel class, but not how it initialises X and Y etc., hence calling Model.__init__
 
         # observation domain  (D x 2)
         self.domain = domain
@@ -123,7 +132,7 @@ class VBPP(gpflow.models.GPModel):
         self.q_sqrt = Param(L, transform=transforms.LowerTriangular(len(feature), num_matrices=1,
                                                                     squeeze=True))
 
-        self.num_latent = 1
+        self.num_latent = 1  # for GPModel functions
         self.psi_jitter = 0.0
 
     @params_as_tensors
@@ -257,7 +266,7 @@ class VBPP(gpflow.models.GPModel):
     def predict_lambda(self, Xnew):
         return self.build_lambda(Xnew)
 
-    def compute_lambda_and_percentiles(self, Xnew, lower=5, upper=95):
+    def predict_lambda_and_percentiles(self, Xnew, lower=5, upper=95):
         """
         Computes mean value of intensity and lower and upper percentiles.
         `lower` and `upper` must be between 0 and 100.
@@ -277,3 +286,9 @@ class VBPP(gpflow.models.GPModel):
         lambda_lower = f2ov_lower * var_f
         lambda_upper = f2ov_upper * var_f
         return lambda_mean, lambda_lower, lambda_upper
+
+    def predict_y(self, Xnew):
+        raise NotImplementedError("use predict_lambda instead")
+
+    def predict_density(self, new_events):
+        raise NotImplementedError
