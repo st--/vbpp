@@ -46,8 +46,9 @@ def integrate_log_fn_sqr(mean, var):
 
 class VBPP(gpflow.models.GPModel):
     """
-    Implementation of the "Variational Bayes for Point Processes" model
-    by Lloyd et al. (2015)
+    Implementation of the "Variational Bayes for Point Processes" model by
+    Lloyd et al. (2015), with capability for multiple observations and the
+    constant offset `beta0` from John and Hensman (2018).
     """
 
     def __init__(self, events: np.ndarray,
