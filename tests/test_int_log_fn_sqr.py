@@ -8,7 +8,7 @@ import pytest
 import tensorflow as tf
 from gpflow.test_util import session_tf
 
-from vbpp.vbpp import integrate_log_fn_sqr
+from vbpp.model import integrate_log_fn_sqr
 from vbpp.tf_utils import tf_len
 
 
