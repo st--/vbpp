@@ -278,10 +278,10 @@ class VBPP(gpflow.models.GPModel):
         # g = f/√var_f ~ Normal(mean_f/√var_f, 1)
         # g² = f²/var_f ~ χ²(k=1, λ=mean_f²/var_f) non-central chi-squared
         m2ov = mean_f ** 2 / var_f
-        if m2ov > 10e3:
+        if (m2ov > 10e3).any():
             raise ValueError("scipy.stats.ncx2.ppf() flatlines for nc > 10e3")
-        f2ov_lower = ncx2_ppf(lower/100, df=1, nc=m2ov)
-        f2ov_upper = ncx2_ppf(upper/100, df=1, nc=m2ov)
+        f2ov_lower = ncx2.ppf(lower/100, df=1, nc=m2ov)
+        f2ov_upper = ncx2.ppf(upper/100, df=1, nc=m2ov)
         # f² = g² * var_f
         lambda_lower = f2ov_lower * var_f
         lambda_upper = f2ov_upper * var_f
