@@ -8,8 +8,8 @@ from setuptools import setup
 requirements = [
     'numpy',
     'scipy',
-    'gpflow<2.0',
-    'tensorflow<2.0',
+    'gpflow>=2.0.0rc1',
+    'tensorflow>=2.0',
 ]
 
 setup(
