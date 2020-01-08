@@ -39,17 +39,16 @@ def tf_calc_Psi_matrix_SqExp(Z, variance, lengthscales, domain):
         - tf.square(z1 - z2) / (4.0 * tf.square(lengthscales)),
         axis=2)
 
-    erf_val = (tf.erf((zm - Tmin) * inv_lengthscales) -
-               tf.erf((zm - Tmax) * inv_lengthscales))
+    erf_val = (tf.math.erf((zm - Tmin) * inv_lengthscales) -
+               tf.math.erf((zm - Tmax) * inv_lengthscales))
     product = tf.reduce_prod(mult * erf_val, axis=2)
-    Ψ = tf.square(variance) * tf.exp(exp_arg + tf.log(product))
+    Ψ = tf.square(variance) * tf.exp(exp_arg + tf.math.log(product))
     return Ψ
 
-def tf_calc_Psi_matrix(kernel, feature, domain):
-    if (isinstance(feature, gpflow.features.InducingPoints) and
+def tf_calc_Psi_matrix(kernel, inducing_var, domain):
+    if (isinstance(inducing_var, gpflow.inducing_variables.InducingPoints) and
             isinstance(kernel, gpflow.kernels.SquaredExponential)):
-        with gpflow.params_as_tensors_for(feature, kernel):
-            return tf_calc_Psi_matrix_SqExp(feature.Z, kernel.variance, kernel.lengthscales, domain)
+        return tf_calc_Psi_matrix_SqExp(inducing_var.Z, kernel.variance, kernel.lengthscale, domain)
     else:
         raise NotImplementedError("tf_calc_Psi_matrix only implemented for SquaredExponential "
                                   "kernel with InducingPoints")

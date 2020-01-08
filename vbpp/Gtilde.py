@@ -93,19 +93,20 @@ def _tf_Gtilde_lookup(z, name=None):
     differentiation w.r.t the derivative will fail: only the first argument is
     meant to be used. Returning both allows us to save some computation.
     """
-    with tf.name_scope(values=[z], name=name, default_name="Gtilde") as scope:
-        return tf.py_func(np_Gtilde_lookup,
-                          [z],
-                          [z.dtype, z.dtype],
-                          stateful=False,
-                          name=scope)
+    with tf.name_scope(name=name) as scope:
+        return tf.py_function(np_Gtilde_lookup, [z], [z.dtype, z.dtype], name=scope)
 
 @tf.custom_gradient
 def tf_Gtilde_lookup(z, name=None):
     """
     Tensorflowed version of np_Gtilde_lookup with gradient
     """
+    if name is None:
+        name = "tf_Gtilde_lookup"
+
     Gs, dGs = _tf_Gtilde_lookup(z, name=name)
+
     def grad(grad_G):
         return dGs * grad_G
+
     return Gs, grad
