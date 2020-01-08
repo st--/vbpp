@@ -60,7 +60,7 @@ class VBPP(gpflow.models.GPModel):
                  *,
                  beta0: float = 1e-6,
                  num_observations: int = 1,
-                 num_data: Optional[int] = None,
+                 num_events: Optional[int] = None,
                  ):
         """
         D = number of dimensions
@@ -85,8 +85,8 @@ class VBPP(gpflow.models.GPModel):
         :param num_observations: number of observations of sets of events
             under the distribution
 
-        :param num_data: number of events, defaults to X.shape[0] (relevant
-            when feeding in minibatches)
+        :param num_events: total number of events, defaults to events.shape[0]
+            (relevant when feeding in minibatches)
         """
         super().__init__(kernel, likelihood=None)  # custom likelihood
 
@@ -94,10 +94,9 @@ class VBPP(gpflow.models.GPModel):
         self.domain = domain
         if domain.ndim != 2 or domain.shape[1] != 2:
             raise ValueError("domain must be of shape D x 2")
-        dim = domain.shape[0]
 
         self.num_observations = num_observations
-        self.num_data = num_data
+        self.num_events = num_events
 
         if not (isinstance(kernel, gpflow.kernels.SquaredExponential)
                 and isinstance(inducing_variable, gpflow.inducing_variables.InducingPoints)):
@@ -141,11 +140,11 @@ class VBPP(gpflow.models.GPModel):
     def _elbo_data_term(self, events, Kuu=None):
         mean, var = self.predict_f(events, full_cov=False, Kuu=Kuu)
         expect_log_fn_sqr = integrate_log_fn_sqr(mean, var)
-        if self.num_data is None:
+        if self.num_events is None:
             scale = 1.0
         else:
             minibatch_size = tf.shape(events)[0]
-            scale = to_default_float(self.num_data) / to_default_float(minibatch_size)
+            scale = to_default_float(self.num_events) / to_default_float(minibatch_size)
         return scale * tf.reduce_sum(expect_log_fn_sqr)
 
     def _var_fx_kxx_term(self):
@@ -254,7 +253,7 @@ class VBPP(gpflow.models.GPModel):
         # g = f/√var_f ~ Normal(mean_f/√var_f, 1)
         # g² = f²/var_f ~ χ²(k=1, λ=mean_f²/var_f) non-central chi-squared
         m2ov = mean_f ** 2 / var_f
-        if (m2ov > 10e3).any():
+        if tf.reduce_any(m2ov > 10e3):
             raise ValueError("scipy.stats.ncx2.ppf() flatlines for nc > 10e3")
         f2ov_lower = ncx2.ppf(lower/100, df=1, nc=m2ov)
         f2ov_upper = ncx2.ppf(upper/100, df=1, nc=m2ov)
