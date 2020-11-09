@@ -19,8 +19,10 @@ def build_data(dataset):
     domain = np.array(dataset.domain, float).reshape(dim, 2)
     return events, domain
 
+
 def domain_grid(domain, num_points):
     return np.linspace(domain.min(axis=1), domain.max(axis=1), num_points)
+
 
 def domain_area(domain):
     return np.prod(domain.max(axis=1) - domain.min(axis=1))
@@ -43,7 +45,7 @@ def demo():
     model = build_model(events, domain)
 
     def objective_closure():
-        return - model.elbo(events)
+        return -model.elbo(events)
 
     gpflow.optimizers.Scipy().minimize(objective_closure, model.trainable_variables)
 
@@ -55,7 +57,7 @@ def demo():
     plt.xlim(X.min(), X.max())
     plt.plot(X, lambda_mean)
     plt.fill_between(X.flatten(), lower, upper, alpha=0.3)
-    plt.plot(events, np.zeros_like(events), '|')
+    plt.plot(events, np.zeros_like(events), "|")
     plt.show()
 
 

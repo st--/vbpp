@@ -42,13 +42,17 @@ def np_Gtilde_lookup(z: np.ndarray):
     z = np.atleast_1d(z)  # otherwise array indexing does not work
 
     # Transform z -> -z, bit easier to think about!
-    z = - z
+    z = -z
 
-    if np.any(z >= 10**(len(__G_lookup_table)-1)):
-        n_overflow = (z >= 10**(len(__G_lookup_table)-1)).sum()
+    if np.any(z >= 10 ** (len(__G_lookup_table) - 1)):
+        n_overflow = (z >= 10 ** (len(__G_lookup_table) - 1)).sum()
         n_lesszero = (z < 0).sum()
-        LOG.warning('Gtilde: z out of range: %d greater-than-zeros, '
-                    '%d out-of-ranges (of %d)', n_lesszero, n_overflow, len(z))
+        LOG.warning(
+            "Gtilde: z out of range: %d greater-than-zeros, %d out-of-ranges (of %d)",
+            n_lesszero,
+            n_overflow,
+            len(z),
+        )
 
     if np.any(z < 0):  # remember, original zs were assumed to be negative
         raise ValueError("Gtilde: invalid z: we require z <= 0")
@@ -59,7 +63,7 @@ def np_Gtilde_lookup(z: np.ndarray):
     Gs = np.zeros_like(z)
     dGs = np.zeros_like(z)
 
-    out_of_range = (z >= 10**(len(__G_lookup_table)-1))
+    out_of_range = z >= 10 ** (len(__G_lookup_table) - 1)
     Gs[out_of_range] = dGs[out_of_range] = np.nan
 
     lower = 0
@@ -70,6 +74,7 @@ def np_Gtilde_lookup(z: np.ndarray):
         # Work out which z lie in this region
         zR = (lower <= z) & (z < upper)
 
+        # fmt: off
         # Work out which are the upper (zj) and lower (zi) intervals for each z
         # and the fraction across the bin the point is (zr)
         zi = np.floor(    z[zR] / binWidth).astype(int)  # lower
@@ -83,6 +88,7 @@ def np_Gtilde_lookup(z: np.ndarray):
         Gs[zR]  = Gi[zi] + dGs[zR] * zr
         # Correct dG for bin width
         dGs[zR] = dGs[zR] / binWidth
+        # fmt: on
 
         # Adjust binWidth, upper and lower boundaries for next region
         binWidth = binWidth * 10
@@ -90,12 +96,13 @@ def np_Gtilde_lookup(z: np.ndarray):
         upper = upper * 10
 
     # Correct dG for z -> -z transformation
-    dGs = - dGs
+    dGs = -dGs
 
     if is_scalar:  # undo atleast_1d
         Gs = Gs[0]
         dGs = dGs[0]
     return Gs, dGs
+
 
 def _tf_Gtilde_lookup(z, name=None):
     """
@@ -106,6 +113,7 @@ def _tf_Gtilde_lookup(z, name=None):
     """
     with tf.name_scope(name=name) as scope:
         return tf.py_function(np_Gtilde_lookup, [z], [z.dtype, z.dtype], name=scope)
+
 
 @tf.custom_gradient
 def tf_Gtilde_lookup(z, name=None):

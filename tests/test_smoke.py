@@ -21,8 +21,9 @@ from vbpp import VBPP
 
 rng = np.random.RandomState(0)
 
+
 def test_smoke():
-    domain = np.array([[0., 10.]])
+    domain = np.array([[0.0, 10.0]])
     kernel = SquaredExponential()
     events = rng.uniform(0, 10, size=20)[:, None]
     feature = InducingPoints(np.linspace(0, 10, 20)[:, None])
@@ -34,7 +35,7 @@ def test_smoke():
     assert np.allclose(m.prior_kl(tf.identity(Kuu)).numpy(), 0.0)
 
     def objective_closure():
-        return - m.elbo(events)
+        return -m.elbo(events)
 
     opt = gpflow.optimizers.Scipy()
     opt.minimize(objective_closure, m.trainable_variables, options=dict(maxiter=2))

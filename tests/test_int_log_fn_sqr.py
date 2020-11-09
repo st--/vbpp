@@ -30,11 +30,12 @@ def quadrature_log_fn_sqr(μn, σn, H=15):
     σn = tf.reshape(σn, (N, 1, 1))
     return gpflow.quadrature.mvnquad(lambda f: tf.math.log(f ** 2), μn, σn, H, Din=1)
 
-@pytest.mark.parametrize('H', [15, 20, 27, 30, 35])
+
+@pytest.mark.parametrize("H", [15, 20, 27, 30, 35])
 def test_integral(H):
-    z = 10**np.linspace(1.6, 10.5, 1000)
+    z = 10 ** np.linspace(1.6, 10.5, 1000)
     s2 = np.r_[0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]
-    zz, ss2 = np.meshgrid(z, s2, indexing='ij')
+    zz, ss2 = np.meshgrid(z, s2, indexing="ij")
     mu = np.sqrt(2 * zz * ss2).flatten()
     assert np.all(mu > 0)
     sigma2 = ss2.flatten()
