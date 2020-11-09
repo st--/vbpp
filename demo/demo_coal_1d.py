@@ -1,4 +1,4 @@
-# Copyright (C) PROWLER.io 2017-2019
+# Copyright (C) Secondmind Ltd 2017-2020
 #
 # Licensed under the Apache License, Version 2.0
 

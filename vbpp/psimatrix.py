@@ -1,6 +1,16 @@
-# Copyright (C) PROWLER.io 2017
+# Copyright (C) Secondmind Ltd 2017-2020
 #
-# Licensed under the Apache License, Version 2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Prototype Code! This code may not be fully tested, or in other ways fit-for-purpose.
@@ -48,7 +58,7 @@ def tf_calc_Psi_matrix_SqExp(Z, variance, lengthscales, domain):
 def tf_calc_Psi_matrix(kernel, inducing_var, domain):
     if (isinstance(inducing_var, gpflow.inducing_variables.InducingPoints) and
             isinstance(kernel, gpflow.kernels.SquaredExponential)):
-        return tf_calc_Psi_matrix_SqExp(inducing_var.Z, kernel.variance, kernel.lengthscale, domain)
+        return tf_calc_Psi_matrix_SqExp(inducing_var.Z, kernel.variance, kernel.lengthscales, domain)
     else:
         raise NotImplementedError("tf_calc_Psi_matrix only implemented for SquaredExponential "
                                   "kernel with InducingPoints")

@@ -1,6 +1,17 @@
-# Copyright (C) PROWLER.io 2017-2019
+# Copyright (C) Secondmind Ltd 2017-2020
 #
-# Licensed under the Apache License, Version 2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 """
 Prototype Code! This code may not be fully tested, or in other ways fit-for-purpose.
@@ -45,7 +56,7 @@ def integrate_log_fn_sqr(mean, var):
     return tf.where(tf.math.is_nan(integrated), point_eval, integrated)
 
 
-class VBPP(gpflow.models.GPModel):
+class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
     """
     Implementation of the "Variational Bayes for Point Processes" model by
     Lloyd et al. (2015), with capability for multiple observations and the
@@ -88,7 +99,11 @@ class VBPP(gpflow.models.GPModel):
         :param num_events: total number of events, defaults to events.shape[0]
             (relevant when feeding in minibatches)
         """
-        super().__init__(kernel, likelihood=None)  # custom likelihood
+        super().__init__(
+            kernel,
+            likelihood=None,  # custom likelihood
+            num_latent_gps=1,
+        )
 
         # observation domain  (D x 2)
         self.domain = domain
@@ -215,6 +230,9 @@ class VBPP(gpflow.models.GPModel):
         """
         return kullback_leiblers.gauss_kl(self.q_mu[:, None], self.q_sqrt[None, :, :], Kuu)
 
+    def maximum_log_likelihood_objective(self, events):
+        return self.elbo(events)
+
     def elbo(self, events):
         """
         Evidence Lower Bound (ELBo) for the log likelihood.
@@ -263,7 +281,7 @@ class VBPP(gpflow.models.GPModel):
         return lambda_mean, lambda_lower, lambda_upper
 
     def predict_y(self, Xnew):
-        raise NotImplementedError("use predict_lambda instead")
+        raise NotImplementedError("Not useful in Poisson models: use predict_lambda instead!")
 
-    def predict_density(self, new_events):
-        raise NotImplementedError
+    def predict_log_density(self, new_events):
+        raise NotImplementedError("Not implemented yet (PRs welcome!)")
