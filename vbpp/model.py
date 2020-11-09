@@ -1,6 +1,17 @@
-# Copyright (C) PROWLER.io 2017-2019
+# Copyright (C) Secondmind Ltd 2017-2020
 #
-# Licensed under the Apache License, Version 2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 """
 Prototype Code! This code may not be fully tested, or in other ways fit-for-purpose.
@@ -29,10 +40,10 @@ def _integrate_log_fn_sqr(mean, var):
     """
     ∫ log(f²) N(f; μ, σ²) df  from -∞ to ∞
     """
-    z = - 0.5 * tf.square(mean) / var
+    z = -0.5 * tf.square(mean) / var
     C = 0.57721566  # Euler-Mascheroni constant
     G = tf_Gtilde_lookup(z)
-    return - G + tf.math.log(0.5 * var) - C
+    return -G + tf.math.log(0.5 * var) - C
 
 
 def integrate_log_fn_sqr(mean, var):
@@ -45,23 +56,25 @@ def integrate_log_fn_sqr(mean, var):
     return tf.where(tf.math.is_nan(integrated), point_eval, integrated)
 
 
-class VBPP(gpflow.models.GPModel):
+class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
     """
     Implementation of the "Variational Bayes for Point Processes" model by
     Lloyd et al. (2015), with capability for multiple observations and the
     constant offset `beta0` from John and Hensman (2018).
     """
 
-    def __init__(self,
-                 inducing_variable: gpflow.inducing_variables.InducingVariables,
-                 kernel: gpflow.kernels.Kernel,
-                 domain: np.ndarray,
-                 q_mu: np.ndarray, q_S: np.ndarray,
-                 *,
-                 beta0: float = 1e-6,
-                 num_observations: int = 1,
-                 num_events: Optional[int] = None,
-                 ):
+    def __init__(
+        self,
+        inducing_variable: gpflow.inducing_variables.InducingVariables,
+        kernel: gpflow.kernels.Kernel,
+        domain: np.ndarray,
+        q_mu: np.ndarray,
+        q_S: np.ndarray,
+        *,
+        beta0: float = 1e-6,
+        num_observations: int = 1,
+        num_events: Optional[int] = None,
+    ):
         """
         D = number of dimensions
         M = size of inducing variables (number of inducing points)
@@ -88,7 +101,11 @@ class VBPP(gpflow.models.GPModel):
         :param num_events: total number of events, defaults to events.shape[0]
             (relevant when feeding in minibatches)
         """
-        super().__init__(kernel, likelihood=None)  # custom likelihood
+        super().__init__(
+            kernel,
+            likelihood=None,  # custom likelihood
+            num_latent_gps=1,
+        )
 
         # observation domain  (D x 2)
         self.domain = domain
@@ -98,11 +115,15 @@ class VBPP(gpflow.models.GPModel):
         self.num_observations = num_observations
         self.num_events = num_events
 
-        if not (isinstance(kernel, gpflow.kernels.SquaredExponential)
-                and isinstance(inducing_variable, gpflow.inducing_variables.InducingPoints)):
-            raise NotImplementedError("This VBPP implementation can only handle real-space "
-                                      "inducing points together with the SquaredExponential "
-                                      "kernel.")
+        if not (
+            isinstance(kernel, gpflow.kernels.SquaredExponential)
+            and isinstance(inducing_variable, gpflow.inducing_variables.InducingPoints)
+        ):
+            raise NotImplementedError(
+                "This VBPP implementation can only handle real-space "
+                "inducing points together with the SquaredExponential "
+                "kernel."
+            )
         self.kernel = kernel
         self.inducing_variable = inducing_variable
 
@@ -119,8 +140,10 @@ class VBPP(gpflow.models.GPModel):
 
     def _Psi_matrix(self):
         Ψ = tf_calc_Psi_matrix(self.kernel, self.inducing_variable, self.domain)
-        psi_jitter_matrix = self.psi_jitter * tf.eye(len(self.inducing_variable), dtype=default_float())
-        return Ψ + psi_jitter_matrix 
+        psi_jitter_matrix = self.psi_jitter * tf.eye(
+            len(self.inducing_variable), dtype=default_float()
+        )
+        return Ψ + psi_jitter_matrix
 
     @property
     def total_area(self):
@@ -131,8 +154,14 @@ class VBPP(gpflow.models.GPModel):
         VBPP-specific conditional on the approximate posterior q(u), including a
         constant mean function.
         """
-        mean, var = conditional(Xnew, self.inducing_variable, self.kernel, self.q_mu[:, None],
-                                full_cov=full_cov, q_sqrt=self.q_sqrt[None, :, :])
+        mean, var = conditional(
+            Xnew,
+            self.inducing_variable,
+            self.kernel,
+            self.q_mu[:, None],
+            full_cov=full_cov,
+            q_sqrt=self.q_sqrt[None, :, :],
+        )
         # TODO make conditional() use Kuu if available
 
         return mean + self.beta0, var
@@ -187,8 +216,10 @@ class VBPP(gpflow.models.GPModel):
 
         # int_var_fx = γ |T| + trace_terms
         # trace_terms = - Tr(Kzz⁻¹ Ψ) + Tr(Kzz⁻¹ S Kzz⁻¹ Ψ)
-        trace_terms = tf.reduce_sum((Rinv_L_LT_RinvT - tf.eye(len(self.inducing_variable), dtype=default_float())) *
-                                    Rinv_Ψ_RinvT)
+        trace_terms = tf.reduce_sum(
+            (Rinv_L_LT_RinvT - tf.eye(len(self.inducing_variable), dtype=default_float()))
+            * Rinv_Ψ_RinvT
+        )
 
         kxx_term = self._var_fx_kxx_term()
         int_var_f = kxx_term + trace_terms
@@ -207,13 +238,16 @@ class VBPP(gpflow.models.GPModel):
 
         int_lambda = f_term + int_cross_term + beta_term
 
-        return - int_lambda
+        return -int_lambda
 
     def prior_kl(self, Kuu):
         """
         KL divergence between p(u) = N(0, Kuu) and q(u) = N(μ, S)
         """
         return kullback_leiblers.gauss_kl(self.q_mu[:, None], self.q_sqrt[None, :, :], Kuu)
+
+    def maximum_log_likelihood_objective(self, events):
+        return self.elbo(events)
 
     def elbo(self, events):
         """
@@ -255,15 +289,15 @@ class VBPP(gpflow.models.GPModel):
         m2ov = mean_f ** 2 / var_f
         if tf.reduce_any(m2ov > 10e3):
             raise ValueError("scipy.stats.ncx2.ppf() flatlines for nc > 10e3")
-        f2ov_lower = ncx2.ppf(lower/100, df=1, nc=m2ov)
-        f2ov_upper = ncx2.ppf(upper/100, df=1, nc=m2ov)
+        f2ov_lower = ncx2.ppf(lower / 100, df=1, nc=m2ov)
+        f2ov_upper = ncx2.ppf(upper / 100, df=1, nc=m2ov)
         # f² = g² * var_f
         lambda_lower = f2ov_lower * var_f
         lambda_upper = f2ov_upper * var_f
         return lambda_mean, lambda_lower, lambda_upper
 
     def predict_y(self, Xnew):
-        raise NotImplementedError("use predict_lambda instead")
+        raise NotImplementedError("Not useful in Poisson models: use predict_lambda instead!")
 
-    def predict_density(self, new_events):
-        raise NotImplementedError
+    def predict_log_density(self, new_events):
+        raise NotImplementedError("Not implemented yet (PRs welcome!)")

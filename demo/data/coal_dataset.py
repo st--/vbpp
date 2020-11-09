@@ -118,12 +118,14 @@ _data = [
     [1962, 1],
 ]
 
+
 def get_events_spiked():
     events = []
     for year, count in _data:
         for _ in range(count):
             events.append(year)
     return events
+
 
 def get_events_distributed(uniform=False, rng=np.random.RandomState()):
     events = []
@@ -135,5 +137,6 @@ def get_events_distributed(uniform=False, rng=np.random.RandomState()):
             yearfractions.sort()
         events.append(year + yearfractions)
     return np.concatenate(events)
+
 
 domain = [1851, 1962]
