@@ -1,4 +1,4 @@
-# Copyright (C) PROWLER.io 2017
+# Copyright (C) Secondmind Ltd 2017
 #
 # Licensed under the Apache License, Version 2.0
 
@@ -10,6 +10,7 @@ import numpy as np
 
 # lookup table provided by Chris Lloyd
 
+# fmt: off
 __G_lookup_table = list(map(np.array, [
     # G1 is G evaluated at z = -1:0.001:0;
     [0, -0.0019993335, -0.0039973348, -0.0059940048, -0.0079893447,
@@ -2428,3 +2429,4 @@ __G_lookup_table = list(map(np.array, [
      -27.282905, -27.283914, -27.284921, -27.285928, -27.286934,
      -27.287938, -27.288942, -27.289944, -27.290946, -27.291946]
 ]))
+# fmt: on

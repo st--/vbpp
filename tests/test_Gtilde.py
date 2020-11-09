@@ -1,30 +1,53 @@
+# Copyright (C) Secondmind Ltd 2017
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import numpy as np
 import pytest
 import tensorflow as tf
 
 from vbpp.Gtilde import np_Gtilde_lookup, tf_Gtilde_lookup
 
+
 class Data:
-    z = - np.concatenate([np.random.randn(101)**2,
-                          10**np.random.uniform(0, 11, 1000),
-                          np.r_[0.0, 0.001, 1.0, 1.001, 1.01, 10.0, 11.0]])
+    z = -np.concatenate(
+        [
+            np.random.randn(101) ** 2,
+            10 ** np.random.uniform(0, 11, 1000),
+            np.r_[0.0, 0.001, 1.0, 1.001, 1.01, 10.0, 11.0],
+        ]
+    )
     z.sort()
+
 
 def test_Gtilde_errors_for_positive_values():
     with pytest.raises(ValueError):
         np_Gtilde_lookup(np.r_[0.1, -0.1, -1.2])
 
+
 def test_Gtilde_at_zero():
     npG, _ = np_Gtilde_lookup(0.0)
     assert np.allclose(npG, 0.0)
 
+
 def test_Gtilde_with_scalar():
-    z = np.float64(- 12.3)  # give explicit type so np and tf match up
+    z = np.float64(-12.3)  # give explicit type so np and tf match up
     npG, _ = np_Gtilde_lookup(z)
     tfG = tf_Gtilde_lookup(z).numpy()
     assert npG == tfG
 
-@pytest.mark.parametrize('shape', [(-1,), (-1, 1), (-1, 2), (2, -1)])
+
+@pytest.mark.parametrize("shape", [(-1,), (-1, 1), (-1, 2), (2, -1)])
 def test_Gtilde(shape):
     z = Data.z.reshape(shape)
     npG, _ = np_Gtilde_lookup(z)
@@ -34,6 +57,7 @@ def test_Gtilde(shape):
     np.testing.assert_equal(npG, tfG, "tensorflowed should equal numpy version")
     if shape == (-1,):
         assert list(npG) == sorted(npG), "Gtilde should be monotonous"
+
 
 def test_Gtilde_gradient_matches():
     z = Data.z
