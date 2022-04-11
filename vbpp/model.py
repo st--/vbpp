@@ -141,7 +141,7 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
     def _Psi_matrix(self):
         Ψ = tf_calc_Psi_matrix(self.kernel, self.inducing_variable, self.domain)
         psi_jitter_matrix = self.psi_jitter * tf.eye(
-            len(self.inducing_variable), dtype=default_float()
+            self.inducing_variable.num_inducing, dtype=default_float()
         )
         return Ψ + psi_jitter_matrix
 
@@ -217,7 +217,7 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
         # int_var_fx = γ |T| + trace_terms
         # trace_terms = - Tr(Kzz⁻¹ Ψ) + Tr(Kzz⁻¹ S Kzz⁻¹ Ψ)
         trace_terms = tf.reduce_sum(
-            (Rinv_L_LT_RinvT - tf.eye(len(self.inducing_variable), dtype=default_float()))
+            (Rinv_L_LT_RinvT - tf.eye(self.inducing_variable.num_inducing, dtype=default_float()))
             * Rinv_Ψ_RinvT
         )
 

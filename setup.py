@@ -8,13 +8,13 @@ from setuptools import setup
 requirements = [
     "numpy",
     "scipy",
-    "gpflow>=2.1.0",
+    "gpflow>=2.1.4",
     "tensorflow>=2.0",
 ]
 
 setup(
     name="vbpp",
-    version="0.0.2",
+    version="0.1.0",
     author="ST John",
     # author_email="",
     description="Variational Bayes for Point Processes using GPflow",
