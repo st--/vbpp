@@ -74,6 +74,7 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
         beta0: float = 1e-6,
         num_observations: int = 1,
         num_events: Optional[int] = None,
+        whiten: bool = True,
     ):
         """
         D = number of dimensions
@@ -138,6 +139,8 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
 
         self.psi_jitter = 0.0
 
+        self.whiten = whiten
+
     def _Psi_matrix(self):
         Ψ = tf_calc_Psi_matrix(self.kernel, self.inducing_variable, self.domain)
         psi_jitter_matrix = self.psi_jitter * tf.eye(
@@ -161,6 +164,7 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
             self.q_mu[:, None],
             full_cov=full_cov,
             q_sqrt=self.q_sqrt[None, :, :],
+            white=self.whiten,
         )
         # TODO make conditional() use Kuu if available
 
@@ -201,7 +205,10 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
 
         # Kzz⁻¹ m = R^-T R⁻¹ m
         # Rinv_m = R⁻¹ m
-        Rinv_m = tf.linalg.triangular_solve(R, self.q_mu[:, None], lower=True)
+        if self.whiten:
+            Rinv_m = self.q_mu[:, None]
+        else:
+            Rinv_m = tf.linalg.triangular_solve(R, self.q_mu[:, None], lower=True)
 
         # R⁻¹ Ψ R^-T
         # = (R⁻¹ Ψ) R^-T
@@ -211,8 +218,11 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
 
         int_mean_f_sqr = tf_vec_mat_vec_mul(Rinv_m, Rinv_Ψ_RinvT, Rinv_m)
 
-        Rinv_L = tf.linalg.triangular_solve(R, self.q_sqrt, lower=True)
-        Rinv_L_LT_RinvT = tf.matmul(Rinv_L, Rinv_L, transpose_b=True)
+        if self.whiten:
+            Rinv_L_LT_RinvT = tf.matmul(self.q_sqrt, self.q_sqrt, transpose_b=True)
+        else:
+            Rinv_L = tf.linalg.triangular_solve(R, self.q_sqrt, lower=True)
+            Rinv_L_LT_RinvT = tf.matmul(Rinv_L, Rinv_L, transpose_b=True)
 
         # int_var_fx = γ |T| + trace_terms
         # trace_terms = - Tr(Kzz⁻¹ Ψ) + Tr(Kzz⁻¹ S Kzz⁻¹ Ψ)
@@ -244,7 +254,10 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
         """
         KL divergence between p(u) = N(0, Kuu) and q(u) = N(μ, S)
         """
-        return kullback_leiblers.gauss_kl(self.q_mu[:, None], self.q_sqrt[None, :, :], Kuu)
+        if self.whiten:
+            return kullback_leiblers.gauss_kl(self.q_mu[:, None], self.q_sqrt[None, :, :])
+        else:
+            return kullback_leiblers.gauss_kl(self.q_mu[:, None], self.q_sqrt[None, :, :], Kuu)
 
     def maximum_log_likelihood_objective(self, events):
         return self.elbo(events)
