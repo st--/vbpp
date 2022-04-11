@@ -23,7 +23,7 @@ import scipy.special as ss
 
 
 def calc_Ψ_matrix(zs, γ, sqrtα, T):
-    α = sqrtα ** 2
+    α = sqrtα**2
     M = len(zs)
     Ψ = np.ones((M, M))
     inv_sqrt_α = 1 / sqrtα
@@ -41,11 +41,11 @@ def calc_Ψ_matrix(zs, γ, sqrtα, T):
                 * np.exp(-zd_sqr / (4 * α[r]))
                 * (ss.erf((zm - Tmax) * inv_sqrt_α[r]) - ss.erf((zm - Tmin) * inv_sqrt_α[r]))
             )
-    return γ ** 2 * Ψ
+    return γ**2 * Ψ
 
 
 def calc_Ψ_matrix_2(zs, γ, sqrtα, T):
-    α = sqrtα ** 2
+    α = sqrtα**2
     M = len(zs)
     Ψ = np.zeros((M, M))
     inv_sqrt_α = 1 / sqrtα
@@ -63,4 +63,4 @@ def calc_Ψ_matrix_2(zs, γ, sqrtα, T):
                 ss.erf((zm - Tmax) * inv_sqrt_α[r]) - ss.erf((zm - Tmin) * inv_sqrt_α[r])
             )
         Ψ[i, j] = v
-    return γ ** 2 * Ψ
+    return γ**2 * Ψ

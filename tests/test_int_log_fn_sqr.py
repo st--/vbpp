@@ -28,7 +28,7 @@ def quadrature_log_fn_sqr(μn, σn, H=15):
     N = tf_len(μn)
     μn = tf.reshape(μn, (N, 1))
     σn = tf.reshape(σn, (N, 1, 1))
-    return gpflow.quadrature.mvnquad(lambda f: tf.math.log(f ** 2), μn, σn, H, Din=1)
+    return gpflow.quadrature.mvnquad(lambda f: tf.math.log(f**2), μn, σn, H, Din=1)
 
 
 @pytest.mark.parametrize("H", [15, 20, 27, 30, 35])

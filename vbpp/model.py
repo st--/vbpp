@@ -51,7 +51,7 @@ def integrate_log_fn_sqr(mean, var):
     μn = tf_squeeze_1d(mean)
     σ2n = tf_squeeze_1d(var)
     integrated = _integrate_log_fn_sqr(mean, var)
-    point_eval = tf.math.log(mean ** 2)  # TODO use mvnquad instead?
+    point_eval = tf.math.log(mean**2)  # TODO use mvnquad instead?
     # TODO explain
     return tf.where(tf.math.is_nan(integrated), point_eval, integrated)
 
@@ -283,10 +283,10 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
         # f ~ Normal(mean_f, var_f)
         mean_f, var_f = self.predict_f(Xnew)
         # λ = E[f²] = E[f]² + Var[f]
-        lambda_mean = mean_f ** 2 + var_f
+        lambda_mean = mean_f**2 + var_f
         # g = f/√var_f ~ Normal(mean_f/√var_f, 1)
         # g² = f²/var_f ~ χ²(k=1, λ=mean_f²/var_f) non-central chi-squared
-        m2ov = mean_f ** 2 / var_f
+        m2ov = mean_f**2 / var_f
         if tf.reduce_any(m2ov > 10e3):
             raise ValueError("scipy.stats.ncx2.ppf() flatlines for nc > 10e3")
         f2ov_lower = ncx2.ppf(lower / 100, df=1, nc=m2ov)
