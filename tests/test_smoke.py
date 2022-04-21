@@ -24,7 +24,7 @@ rng = np.random.RandomState(0)
 
 
 @pytest.mark.parametrize("whiten", [True, False])
-def test_smoke(whiten):
+def test_smoke_optimize_and_predict(whiten):
     domain = np.array([[0.0, 10.0]])
     events = rng.uniform(0, 10, size=20)[:, None]
 
@@ -39,3 +39,12 @@ def test_smoke(whiten):
 
     opt = gpflow.optimizers.Scipy()
     opt.minimize(objective_closure, m.trainable_variables, options=dict(maxiter=2))
+
+    X = np.linspace(-1, 11, 19)[:, None]
+    mean, lower, upper = m.predict_lambda_and_percentiles(X)
+    mean_again = m.predict_lambda(X)
+    np.testing.assert_allclose(mean, mean_again)
+    np.testing.assert_array_less(lower, mean)
+    np.testing.assert_array_less(mean, upper)
+
+    _ = m.predict_f_samples(X)
