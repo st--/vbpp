@@ -75,7 +75,7 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
         beta0: float = 1e-6,
         num_observations: int = 1,
         num_events: Optional[int] = None,
-        whiten: bool = True,
+        whiten: bool = False,
     ):
         """
         D = number of dimensions
