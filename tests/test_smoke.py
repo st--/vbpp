@@ -1,3 +1,4 @@
+# Copyright (C) 2022 ST John
 # Copyright (C) Secondmind Ltd 2017
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 import numpy as np
-import tensorflow as tf
 from gpflow.inducing_variables import InducingPoints
 from gpflow.kernels import SquaredExponential
 import gpflow
@@ -22,20 +23,22 @@ from vbpp import VBPP
 rng = np.random.RandomState(0)
 
 
-def test_smoke():
+@pytest.mark.parametrize("whiten", [True, False])
+def test_smoke_optimize_and_predict(whiten):
     domain = np.array([[0.0, 10.0]])
-    kernel = SquaredExponential()
     events = rng.uniform(0, 10, size=20)[:, None]
-    feature = InducingPoints(np.linspace(0, 10, 20)[:, None])
-    M = len(feature)
-    m = VBPP(feature, kernel, domain, np.zeros(M), np.eye(M))
 
-    Kuu = m.compute_Kuu()
-    m.q_sqrt.assign(np.linalg.cholesky(Kuu))
-    assert np.allclose(m.prior_kl(tf.identity(Kuu)).numpy(), 0.0)
+    kernel = SquaredExponential()
+    Z = np.linspace(0, 10, 17)[:, None]
+    feature = InducingPoints(Z)
+    M = feature.num_inducing
+    m = VBPP(feature, kernel, domain, np.zeros(M), np.eye(M), whiten=whiten)
 
     def objective_closure():
         return -m.elbo(events)
 
     opt = gpflow.optimizers.Scipy()
     opt.minimize(objective_closure, m.trainable_variables, options=dict(maxiter=2))
+
+    X = np.linspace(-1, 11, 19)[:, None]
+    _ = m.predict_f_samples(X)

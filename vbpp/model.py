@@ -1,3 +1,4 @@
+# Copyright (C) 2022 ST John
 # Copyright (C) Secondmind Ltd 2017-2020
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,6 +62,11 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
     Implementation of the "Variational Bayes for Point Processes" model by
     Lloyd et al. (2015), with capability for multiple observations and the
     constant offset `beta0` from John and Hensman (2018).
+
+    Note: If you encounter "Input matrix is not invertible." errors during
+    training, this may be due to inducing points moving too close to each
+    other, especially in 1D. You may want to consider fixing the inducing
+    points, e.g. on a grid.
     """
 
     def __init__(
@@ -74,6 +80,7 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
         beta0: float = 1e-6,
         num_observations: int = 1,
         num_events: Optional[int] = None,
+        whiten: bool = False,
     ):
         """
         D = number of dimensions
@@ -100,6 +107,10 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
 
         :param num_events: total number of events, defaults to events.shape[0]
             (relevant when feeding in minibatches)
+
+        :param whiten: whether to use the whitened representation of q(u).
+            When whiten=True, we parametrise q(v) = N(q_mu, q_S) instead, and u = L v,
+            where L is the lower-triangular Cholesky factor of the kernel matrix Kuu.
         """
         super().__init__(
             kernel,
@@ -138,6 +149,8 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
 
         self.psi_jitter = 0.0
 
+        self.whiten = whiten
+
     def _Psi_matrix(self):
         Ψ = tf_calc_Psi_matrix(self.kernel, self.inducing_variable, self.domain)
         psi_jitter_matrix = self.psi_jitter * tf.eye(
@@ -149,11 +162,13 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
     def total_area(self):
         return np.prod(self.domain[:, 1] - self.domain[:, 0])
 
-    def predict_f(self, Xnew, full_cov=False, *, Kuu=None):
+    def predict_f(self, Xnew, full_cov=False, *, full_output_cov=False, Kuu=None):
         """
         VBPP-specific conditional on the approximate posterior q(u), including a
         constant mean function.
         """
+        if full_output_cov:
+            raise NotImplementedError("only supports single-output models")
         mean, var = conditional(
             Xnew,
             self.inducing_variable,
@@ -161,6 +176,7 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
             self.q_mu[:, None],
             full_cov=full_cov,
             q_sqrt=self.q_sqrt[None, :, :],
+            white=self.whiten,
         )
         # TODO make conditional() use Kuu if available
 
@@ -201,7 +217,10 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
 
         # Kzz⁻¹ m = R^-T R⁻¹ m
         # Rinv_m = R⁻¹ m
-        Rinv_m = tf.linalg.triangular_solve(R, self.q_mu[:, None], lower=True)
+        if self.whiten:
+            Rinv_m = self.q_mu[:, None]
+        else:
+            Rinv_m = tf.linalg.triangular_solve(R, self.q_mu[:, None], lower=True)
 
         # R⁻¹ Ψ R^-T
         # = (R⁻¹ Ψ) R^-T
@@ -211,8 +230,11 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
 
         int_mean_f_sqr = tf_vec_mat_vec_mul(Rinv_m, Rinv_Ψ_RinvT, Rinv_m)
 
-        Rinv_L = tf.linalg.triangular_solve(R, self.q_sqrt, lower=True)
-        Rinv_L_LT_RinvT = tf.matmul(Rinv_L, Rinv_L, transpose_b=True)
+        if self.whiten:
+            Rinv_L_LT_RinvT = tf.matmul(self.q_sqrt, self.q_sqrt, transpose_b=True)
+        else:
+            Rinv_L = tf.linalg.triangular_solve(R, self.q_sqrt, lower=True)
+            Rinv_L_LT_RinvT = tf.matmul(Rinv_L, Rinv_L, transpose_b=True)
 
         # int_var_fx = γ |T| + trace_terms
         # trace_terms = - Tr(Kzz⁻¹ Ψ) + Tr(Kzz⁻¹ S Kzz⁻¹ Ψ)
@@ -244,7 +266,10 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
         """
         KL divergence between p(u) = N(0, Kuu) and q(u) = N(μ, S)
         """
-        return kullback_leiblers.gauss_kl(self.q_mu[:, None], self.q_sqrt[None, :, :], Kuu)
+        if self.whiten:
+            return kullback_leiblers.gauss_kl(self.q_mu[:, None], self.q_sqrt[None, :, :])
+        else:
+            return kullback_leiblers.gauss_kl(self.q_mu[:, None], self.q_sqrt[None, :, :], Kuu)
 
     def maximum_log_likelihood_objective(self, events):
         return self.elbo(events)
