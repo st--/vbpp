@@ -32,11 +32,14 @@ def build_model(events, domain, M=20):
     kernel = gpflow.kernels.SquaredExponential()
     Z = domain_grid(domain, M)
     feature = gpflow.inducing_variables.InducingPoints(Z)
+    gpflow.set_trainable(feature, False)
     q_mu = np.zeros(M)
     q_S = np.eye(M)
     num_events = len(events)
     beta0 = np.sqrt(num_events / domain_area(domain))
-    model = VBPP(feature, kernel, domain, q_mu, q_S, beta0=beta0, num_events=num_events)
+    model = VBPP(
+        feature, kernel, domain, q_mu, q_S, beta0=beta0, num_events=num_events, whiten=True
+    )
     return model
 
 
