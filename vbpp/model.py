@@ -153,11 +153,13 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
     def total_area(self):
         return np.prod(self.domain[:, 1] - self.domain[:, 0])
 
-    def predict_f(self, Xnew, full_cov=False, *, Kuu=None):
+    def predict_f(self, Xnew, full_cov=False, *, full_output_cov=False, Kuu=None):
         """
         VBPP-specific conditional on the approximate posterior q(u), including a
         constant mean function.
         """
+        if full_output_cov:
+            raise NotImplementedError("only supports single-output models")
         mean, var = conditional(
             Xnew,
             self.inducing_variable,
