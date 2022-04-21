@@ -41,10 +41,4 @@ def test_smoke_optimize_and_predict(whiten):
     opt.minimize(objective_closure, m.trainable_variables, options=dict(maxiter=2))
 
     X = np.linspace(-1, 11, 19)[:, None]
-    mean, lower, upper = m.predict_lambda_and_percentiles(X)
-    mean_again = m.predict_lambda(X)
-    np.testing.assert_allclose(mean, mean_again)
-    np.testing.assert_array_less(lower, mean)
-    np.testing.assert_array_less(mean, upper)
-
     _ = m.predict_f_samples(X)

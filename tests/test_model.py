@@ -70,3 +70,23 @@ def test_equivalence_of_whitening():
     np.testing.assert_allclose(
         m_whitened.elbo(Data.events), m_unwhitened.elbo(Data.events), rtol=1e-6
     )
+
+
+@pytest.mark.parametrize("whiten", [True, False])
+def test_lambda_predictions(whiten):
+    kernel = SquaredExponential()
+    feature = InducingPoints(Data.Z)
+
+    M = feature.num_inducing
+    np.random.seed(42)
+    m_init = np.random.randn(M)
+    S_init = (lambda A: A @ A.T)(np.random.randn(M, M))
+    beta0 = 1.234
+
+    m = VBPP(feature, kernel, Data.domain, m_init, S_init, whiten=whiten, beta0=beta0)
+
+    mean, lower, upper = m.predict_lambda_and_percentiles(X)
+    mean_again = m.predict_lambda(X)
+    np.testing.assert_allclose(mean, mean_again)
+    np.testing.assert_array_less(lower, mean)
+    np.testing.assert_array_less(mean, upper)
