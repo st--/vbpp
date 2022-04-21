@@ -30,7 +30,7 @@ class Data:
 
 
 @pytest.mark.parametrize("whiten", [True, False])
-def test_initialization(whiten):
+def test_elbo_terms_at_initialization(whiten):
     kernel = SquaredExponential()
     feature = InducingPoints(Data.Z)
     M = feature.num_inducing
@@ -43,7 +43,7 @@ def test_initialization(whiten):
     assert np.allclose(m._elbo_integral_term(Kuu).numpy(), -m.total_area)
 
 
-def test_whitening():
+def test_equivalence_of_whitening():
     kernel = SquaredExponential()
     feature = InducingPoints(Data.Z)
 
