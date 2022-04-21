@@ -31,7 +31,7 @@ def test_smoke(whiten):
     kernel = SquaredExponential()
     Z = np.linspace(0, 10, 17)[:, None]
     feature = InducingPoints(Z)
-    M = len(feature)
+    M = feature.num_inducing
     m = VBPP(feature, kernel, domain, np.zeros(M), np.eye(M), whiten=whiten)
 
     def objective_closure():

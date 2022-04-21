@@ -33,7 +33,7 @@ class Data:
 def test_initialization(whiten):
     kernel = SquaredExponential()
     feature = InducingPoints(Data.Z)
-    M = len(feature)
+    M = feature.num_inducing
     m_init = np.zeros(M)
     S_init = np.eye(M) if whiten else kernel(Data.Z, full_cov=True)
     m = VBPP(feature, kernel, Data.domain, m_init, S_init, whiten=whiten)
@@ -47,7 +47,7 @@ def test_whitening():
     kernel = SquaredExponential()
     feature = InducingPoints(Data.Z)
 
-    M = len(feature)
+    M = feature.num_inducing
     np.random.seed(42)
     m_init = np.random.randn(M)
     S_init = (lambda A: A @ A.T)(np.random.randn(M, M))
