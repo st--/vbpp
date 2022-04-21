@@ -62,6 +62,11 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
     Implementation of the "Variational Bayes for Point Processes" model by
     Lloyd et al. (2015), with capability for multiple observations and the
     constant offset `beta0` from John and Hensman (2018).
+
+    Note: If you encounter "Input matrix is not invertible." errors during
+    training, this may be due to inducing points moving too close to each
+    other, especially in 1D. You may want to consider fixing the inducing
+    points, e.g. on a grid.
     """
 
     def __init__(
@@ -102,6 +107,8 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
 
         :param num_events: total number of events, defaults to events.shape[0]
             (relevant when feeding in minibatches)
+
+        :param whiten: whether to use the whitened representation of q(u).
         """
         super().__init__(
             kernel,
