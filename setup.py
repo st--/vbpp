@@ -14,7 +14,7 @@ requirements = [
 
 setup(
     name="vbpp",
-    version="0.1.0",
+    version="0.1.1",
     author="ST John",
     # author_email="",
     description="Variational Bayes for Point Processes using GPflow",
