@@ -27,6 +27,7 @@ class Data:
     domain = np.array([[0.0, 10.0]])
     events = rng.uniform(0, 10, size=20)[:, None]
     Z = np.linspace(0, 10, 17)[:, None]
+    Xtest = np.linspace(-2, 12, 37)[:, None]
 
 
 @pytest.mark.parametrize("whiten", [True, False])
@@ -85,8 +86,8 @@ def test_lambda_predictions(whiten):
 
     m = VBPP(feature, kernel, Data.domain, m_init, S_init, whiten=whiten, beta0=beta0)
 
-    mean, lower, upper = m.predict_lambda_and_percentiles(X)
-    mean_again = m.predict_lambda(X)
+    mean, lower, upper = m.predict_lambda_and_percentiles(Data.Xtest)
+    mean_again = m.predict_lambda(Data.Xtest)
     np.testing.assert_allclose(mean, mean_again)
     np.testing.assert_array_less(lower, mean)
     np.testing.assert_array_less(mean, upper)
