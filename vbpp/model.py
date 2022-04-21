@@ -109,6 +109,8 @@ class VBPP(gpflow.models.GPModel, gpflow.models.ExternalDataTrainingLossMixin):
             (relevant when feeding in minibatches)
 
         :param whiten: whether to use the whitened representation of q(u).
+            When whiten=True, we parametrise q(v) = N(q_mu, q_S) instead, and u = L v,
+            where L is the lower-triangular Cholesky factor of the kernel matrix Kuu.
         """
         super().__init__(
             kernel,
